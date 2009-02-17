@@ -1,0 +1,10 @@
+;;; posix-extras.meta -*- scheme -*-
+
+((egg "posix-extras.egg")
+ (synopsis "Additional POSIX functionality not included in the posix unit")
+ (category os)
+ (author "Drew Hess")
+ (license "MIT")
+ (doc-from-wiki)
+ (needs files)
+ (files "posix-extras.meta" "posix-extras-base.scm" "posix-extras.scm"))
