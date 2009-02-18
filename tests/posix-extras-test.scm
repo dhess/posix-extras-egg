@@ -86,23 +86,16 @@
     (change-directory tmpdir)
     (let ((real-tmpdir-path (current-directory)))
       (change-directory startdir)
-      (let ((returned-value 
-             (with-current-directory
-              tmpdir
-              (lambda ()
-                (begin
-                  (test "changes current working directory?"
-                        real-tmpdir-path
-                        (current-directory))
-                  "whoot")))))
-        (test "returns the value of thunk?" "whoot" returned-value))
+      (let ((cd
+             (with-current-directory tmpdir
+                                     (lambda () (current-directory)))))
+        (test "changes working directory?" real-tmpdir-path cd))
       (test "restores previous working directory?"
             startdir
             (current-directory))
       (let-values (((u v)
                     (with-current-directory tmpdir
-                                            (lambda ()
-                                              (values 'one 'two)))))
+                                            (lambda () (values 'one 'two)))))
         (test-assert "returns multiple values from thunk?"
                      (and (eq? u 'one)
                           (eq? v 'two))))
@@ -115,7 +108,7 @@
      (lambda (break)
        (with-current-directory tmpdir
                                (lambda () break))))
-    (test "continuation inside thunk restores previous working directory?"
+    (test "continuation out of thunk restores previous working directory?"
           startdir (current-directory))
     (test-error "this test will signal an error"
                 (with-current-directory tmpdir
@@ -130,14 +123,9 @@
              (change-directory tmpdir)
               (let ((real-tmpdir-path (current-directory)))
                 (change-directory startdir)
-                (let ((returned-value 
-                       (with-current-directory*
-                        tmpdir
-                        (test "changes current working directory?"
-                              real-tmpdir-path
-                              (current-directory))
-                        "whoot")))
-                  (test "returns the value of body?" "whoot" returned-value))
+                (let ((cd
+                       (with-current-directory* tmpdir (current-directory))))
+                  (test "changes working directory?" real-tmpdir-path cd))
                 (test "restores previous working directory?"
                       startdir
                       (current-directory))
@@ -157,7 +145,7 @@
     (call/cc
      (lambda (break)
        (with-current-directory* tmpdir break)))
-    (test "continuation inside body restores previous working directory?"
+    (test "continuation out of body restores previous working directory?"
           startdir (current-directory))
     (test-error "this test will signal an error"
                 (with-current-directory* tmpdir (error "foo")))
@@ -167,16 +155,6 @@
 
 (test-group "with-temporary-directory"
   (let ((startdir (current-directory)))
-    (let ((returned-value
-           (with-temporary-directory
-            (lambda ()
-              (let ((cwd (current-directory)))
-                (test-assert "changes current working directory?"
-                             (not (equal? cwd startdir)))
-                "whoot")))))
-      (test "returns the value of thunk?" "whoot" returned-value)
-      (test "restores previous working directory?"
-            startdir (current-directory)))
     (let ((tmpdir
            (with-temporary-directory
             (lambda ()
@@ -186,6 +164,10 @@
                 (create-directory "foobar")
                 (touch ".this-is-a-dotfile")
                 (current-directory))))))
+      (test-assert "changes working directory?"
+                   (not (equal? startdir tmpdir)))
+      (test "restores previous working directory?"
+            startdir (current-directory))
       (test-assert "deletes temporary directory and its contents?"
                    (not (file-exists? tmpdir))))
     (let-values (((u v)
@@ -196,21 +178,20 @@
                         (eq? v 'v))))))
 
 (test-group "with-temporary-directory, continuations and exceptions"
-  (let ((startdir (current-directory)))
-    (let ((tmpdir #f))
-      (call/cc
-       (lambda (break)
-         (with-temporary-directory
-          (lambda ()
-            (begin
-              (set! tmpdir (current-directory))
-              (touch "testfile")              
-              break)))))
-      (test "continuation inside thunk restores previous working directory?"
-            startdir (current-directory))
-      (test-assert
-       "continuation inside thunk deletes temp directory and its contents?"
-       (not (file-exists? tmpdir))))
+  (let* ((startdir (current-directory))
+         (tmpdir (call/cc
+                  (lambda (break)
+                    (begin 
+                      (with-temporary-directory
+                       (lambda ()
+                         (begin
+                           (touch "testfile")              
+                           break (current-directory)))))))))
+    (test "continuation out of thunk restores previous working directory?"
+          startdir (current-directory))
+    (test-assert
+     "continuation out of thunk deletes temp directory and its contents?"
+     (not (file-exists? tmpdir)))
     (let ((tmpdir #f))
       (test-error "this test will signal an error"
                   (with-temporary-directory
@@ -227,22 +208,18 @@
 
 (test-group "with-temporary-directory*"
   (let ((startdir (current-directory)))
-    (let ((returned-value
-           (with-temporary-directory*
-             (let ((cwd (current-directory)))
-               (test-assert "changes current working directory?"
-                            (not (equal? cwd startdir)))
-               "whoot"))))
-      (test "returns the value of body?" "whoot" returned-value)
-      (test "restores previous working directory?"
-            startdir (current-directory)))
     (let ((tmpdir
            (with-temporary-directory*
-             ;; create a file and a dir in the temporary dir
-            (touch "testfile")
-            (create-directory "foobar")
-            (touch ".this-is-a-dotfile")
-            (current-directory))))
+             (let ((cwd (current-directory)))
+               ;; create a file and a dir in the temporary dir
+               (touch "testfile")
+               (create-directory "foobar")
+               (touch ".this-is-a-dotfile")
+               (current-directory)))))
+      (test-assert "changes working directory?"
+                   (not (equal? startdir tmpdir)))
+      (test "restores previous working directory?"
+            startdir (current-directory))
       (test-assert "deletes temporary directory and its contents?"
                    (not (file-exists? tmpdir))))
     (let-values (((u v)
@@ -253,19 +230,17 @@
                         (eq? v 'v))))))
 
 (test-group "with-temporary-directory*, continuations and exceptions"
-  (let ((startdir (current-directory)))
-    (let ((tmpdir #f))
-      (call/cc
-       (lambda (break)
-         (with-temporary-directory*
-           (set! tmpdir (current-directory))
-           (touch "testfile")              
-           break)))
-      (test "continuation inside body restores previous working directory?"
-            startdir (current-directory))
-      (test-assert
-       "continuation inside body deletes temp directory and its contents?"
-       (not (file-exists? tmpdir))))
+  (let ((startdir (current-directory))
+        (tmpdir (call/cc
+                 (lambda (break)
+                   (with-temporary-directory*
+                    (touch "testfile")              
+                    break (current-directory))))))
+    (test "continuation out of body restores previous working directory?"
+          startdir (current-directory))
+    (test-assert
+     "continuation out of body deletes temp directory and its contents?"
+     (not (file-exists? tmpdir)))
     (let ((tmpdir #f))
       (test-error "this test will signal an error"
                   (with-temporary-directory*
