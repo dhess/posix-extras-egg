@@ -181,24 +181,24 @@
     (delete-directory tmpdir)))
 
 (test-group "with-curent-directory*"
-            (let ((startdir (current-directory))
-                  (tmpdir (create-temporary-directory)))
-             (let ((actual-dirname (get-actual-dirname tmpdir)))
-               (let ((cd
-                       (with-current-directory* tmpdir (current-directory))))
-                  (test "changes working directory?" actual-dirname cd))
-                (test "restores previous working directory?"
-                      startdir
-                      (current-directory))
-                (let-values (((u v)
-                              (with-current-directory* tmpdir
-                                                       1  ;dummy values
-                                                       2
-                                                       (values 'one 'two))))
-                  (test-assert "returns multiple values from body?"
-                               (and (eq? u 'one)
-                                    (eq? v 'two))))
-                (delete-directory tmpdir))))
+  (let ((startdir (current-directory))
+        (tmpdir (create-temporary-directory)))
+    (let ((actual-dirname (get-actual-dirname tmpdir)))
+      (let ((cd
+             (with-current-directory* tmpdir (current-directory))))
+        (test "changes working directory?" actual-dirname cd))
+      (test "restores previous working directory?"
+            startdir
+            (current-directory))
+      (let-values (((u v)
+                    (with-current-directory* tmpdir
+                                             1  ;dummy values
+                                             2
+                                             (values 'one 'two))))
+        (test-assert "returns multiple values from body?"
+                     (and (eq? u 'one)
+                          (eq? v 'two))))
+      (delete-directory tmpdir))))
 
 (test-group "with-current-directory*, continuations and exceptions"
   (let ((startdir (current-directory))
