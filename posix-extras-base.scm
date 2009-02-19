@@ -34,15 +34,28 @@
          with-current-directory
          with-temporary-directory))
 
-(define (create-temporary-directory)
-  (let* ((filename (create-temporary-file))
-         (dirname (string-append filename
-                                 "."
-                                 (number->string (random 1000000)))))
-    (create-directory dirname)
-    (delete-file filename)
-    dirname))
+(define mkdtemp
+  (foreign-lambda c-string mkdtemp c-string))
 
+;;; Probably doesn't work on Windows. Sorry.
+
+(define (create-temporary-directory #!optional parentdir)
+  ;; mkdtemp() on GNU/Linux requires at least 6 X's at the end of the
+  ;; template string. On Mac OS X it's less strict but uses the same
+  ;; pattern.
+  (let ((pd
+         (if parentdir
+             parentdir
+             (let ((env-tmpdir (getenv "TMPDIR")))
+               (if env-tmpdir
+                   env-tmpdir
+                   "/tmp")))))
+   (let ((result (mkdtemp (canonical-path
+                            (string-append pd "/peXXXXXX")))))
+      (if (not result)
+          (##sys#posix-error)
+          result))))
+        
 (define (delete-path* pathname)
   (if (directory? pathname)
       (let ((full-paths (map (lambda (basename) (pathname-replace-directory

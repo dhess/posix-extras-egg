@@ -31,16 +31,85 @@
 (test-group "create-temporary-directory"
   (let ((tmpdir (create-temporary-directory)))
     (test-assert "created?" (directory? tmpdir))
-    (test-assert "temp file hack was deleted?"
-                 (not (file-exists? (pathname-replace-extension
-                                     tmpdir
-                                     ""))))
-    ;; cleanup
-    (if (directory? tmpdir)
+    (test "has secure permissions?"
+          ;; ugh, file-permissions returns non-perm bits, too
+          (let ((s_ifdir 16384))
+            (bitwise-ior perm/irwxu s_ifdir))
+          (file-permissions tmpdir))
+   (let ((tmpdir2 (create-temporary-directory tmpdir)))
+     (test "works with optional parentdir parameter?"
+            tmpdir
+            (pathname-directory tmpdir2))
+      (if (directory? tmpdir2)
+          (delete-directory tmpdir2)))
+   (if (directory? tmpdir)
         (delete-directory tmpdir))))
+
+;;; In certain tmpdir schemes (e.g., Mac OS X), current-directory may
+;;; return a different path than the path used to change the working
+;;; directory. One way to be consistent is to change to the directory
+;;; and then call current-directory.
+;;;
+;;; Note: don't use with-current-directory or with-current-directory*
+;;; here because we can't be sure they actually work. These are tests,
+;;; after all!
+
+(define (get-actual-dirname path)
+  (let ((cd (current-directory)))
+    (change-directory path)
+    (let ((dirname (current-directory)))
+      (change-directory cd)
+      dirname)))
+
+(test-group "create-temporary-directory, TMPDIR and /tmp"
+  (define (env-tmpdir-test env-tmpdir)
+    (let ((tmpdir (create-temporary-directory)))
+      (test "uses TMPDIR environment variable?"
+          (get-actual-dirname env-tmpdir)
+          (get-actual-dirname (pathname-directory tmpdir)))
+      (if (directory? tmpdir)
+          (delete-directory tmpdir))))
+  (define (tmp-test)
+    (let ((tmpdir (create-temporary-directory)))
+     (test "uses /tmp when TMPDIR environment variable not set?"
+            (get-actual-dirname "/tmp")
+            (get-actual-dirname (pathname-directory tmpdir)))
+      (if (directory? tmpdir)
+          (delete-directory tmpdir))))
+  (let ((env-tmpdir (getenv "TMPDIR")))
+    (if env-tmpdir
+        (begin
+          (env-tmpdir-test env-tmpdir)
+          ;; XXX dhess - unsetenv doesn't seem to work for me on Mac OS X.
+          ;; (unsetenv "TMPDIR")
+          ;; (tmp-test)
+          ;; (setenv "TMPDIR" env-tmpdir)
+          )
+        (begin
+          (tmp-test)
+          (let ((tmp-env-tmpdir (create-temporary-directory)))
+            (setenv "TMPDIR" tmp-env-tmpdir)
+            (env-tmpdir-test tmp-env-tmpdir)
+            (if (directory? tmp-env-tmpdir)
+                (delete-directory tmp-env-tmpdir))
+            (unsetenv "TMPDIR"))))))
 
 (define (touch filename)
   (run (touch ,filename)))
+
+(test-group "create-temporary-directory, error-handling"
+  (let* ((tmpdir (create-temporary-directory))
+         (tmpfile (make-pathname tmpdir "foobar")))
+    (touch tmpfile)
+    (test-error "signals an error on invalid parentdir?"
+                (create-temporary-directory tmpfile))
+    (let ((orig-mode (file-permissions tmpdir)))
+      (change-file-mode tmpdir perm/irusr)
+      (test-error "signals an error on permission denied?"
+                  (create-temporary-directory tmpdir))
+      (change-file-mode tmpdir orig-mode))
+    (delete-file tmpfile)
+    (delete-directory tmpdir)))
 
 (test-group "delete-path*"
   (begin
@@ -79,17 +148,11 @@
 (test-group "with-curent-directory"
   (let ((startdir (current-directory))
         (tmpdir (create-temporary-directory)))
-    ;; In certain tmpdir schemes (e.g., Mac OS X), current-directory
-    ;; may return a different path than the path used to change the
-    ;; working directory. Get it here so we can compare it in the
-    ;; test.
-    (change-directory tmpdir)
-    (let ((real-tmpdir-path (current-directory)))
-      (change-directory startdir)
-      (let ((cd
+   (let ((actual-dirname (get-actual-dirname tmpdir)))
+     (let ((cd
              (with-current-directory tmpdir
                                      (lambda () (current-directory)))))
-        (test "changes working directory?" real-tmpdir-path cd))
+        (test "changes working directory?" actual-dirname cd))
       (test "restores previous working directory?"
             startdir
             (current-directory))
@@ -120,12 +183,10 @@
 (test-group "with-curent-directory*"
             (let ((startdir (current-directory))
                   (tmpdir (create-temporary-directory)))
-             (change-directory tmpdir)
-              (let ((real-tmpdir-path (current-directory)))
-                (change-directory startdir)
-                (let ((cd
+             (let ((actual-dirname (get-actual-dirname tmpdir)))
+               (let ((cd
                        (with-current-directory* tmpdir (current-directory))))
-                  (test "changes working directory?" real-tmpdir-path cd))
+                  (test "changes working directory?" actual-dirname cd))
                 (test "restores previous working directory?"
                       startdir
                       (current-directory))
