@@ -185,7 +185,7 @@
           (call/cc
            (lambda (break)
              (with-current-directory tmpdir
-               (lambda () break))))
+               (lambda () (break 0)))))
           (test
            "continuation out of thunk restores previous working directory?"
            startdir
@@ -222,7 +222,7 @@
               (tmpdir (create-temporary-directory)))
           (call/cc
            (lambda (break)
-             (with-current-directory* tmpdir break)))
+             (with-current-directory* tmpdir (break 0))))
           (test "continuation out of body restores previous working directory?"
                 startdir (current-directory))
           (test-error "this test will signal an error"
@@ -264,7 +264,7 @@
                               (lambda ()
                                 (begin
                                   (touch "testfile")              
-                                  break (current-directory)))))))))
+                                  (break (current-directory))))))))))
           (test "continuation out of thunk restores previous working directory?"
                 startdir (current-directory))
           (test-assert
@@ -313,7 +313,7 @@
                        (lambda (break)
                          (with-temporary-directory*
                            (touch "testfile")              
-                           break (current-directory))))))
+                           (break (current-directory)))))))
           (test "continuation out of body restores previous working directory?"
                 startdir (current-directory))
           (test-assert
