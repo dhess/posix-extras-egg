@@ -50,12 +50,12 @@
                (if env-tmpdir
                    env-tmpdir
                    "/tmp")))))
-   (let ((result (mkdtemp (canonical-path
+    (let ((result (mkdtemp (canonical-path
                             (string-append pd "/peXXXXXX")))))
       (if (not result)
           (##sys#posix-error)
           result))))
-        
+
 (define (delete-path* pathname)
   (if (directory? pathname)
       (let ((full-paths (map (lambda (basename) (pathname-replace-directory
