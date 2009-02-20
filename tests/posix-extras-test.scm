@@ -61,6 +61,14 @@
       (change-directory cd)
       dirname)))
 
+;;; unsetenv is broken in Chicken 3.4.0 and earlier on Mac OS X.
+
+(define (working-unsetenv?)
+  (let ((envvar (string-append "PE_TEST_" (number->string (random 1000000)))))
+    (setenv envvar "no")
+    (unsetenv envvar)
+    (equal? #f (getenv envvar))))
+
 (test-group "create-temporary-directory, TMPDIR and /tmp"
   (define (env-tmpdir-test env-tmpdir)
     (let ((tmpdir (create-temporary-directory)))
@@ -80,11 +88,13 @@
     (if env-tmpdir
         (begin
           (env-tmpdir-test env-tmpdir)
-          ;; XXX dhess - unsetenv doesn't seem to work for me on Mac OS X.
-          ;; (unsetenv "TMPDIR")
-          ;; (tmp-test)
-          ;; (setenv "TMPDIR" env-tmpdir)
-          )
+          (if (working-unsetenv?)
+              (begin
+               (unsetenv "TMPDIR")
+               (tmp-test)
+               (setenv "TMPDIR" env-tmpdir))
+              (print
+               "skipping /tmp test, unsetenv is broken on this platform")))
         (begin
           (tmp-test)
           (let ((tmp-env-tmpdir (create-temporary-directory)))
