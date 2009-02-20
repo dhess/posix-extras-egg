@@ -1,0 +1,8 @@
+* tests
+** disable delete-path* test group by default.
+** disable delete-path* and with-temporary-directory tests if either create-temporary-directory or with-current-directory tests fail.
+
+* Add with-env and with-total-env
+
+* Chicken/egg bugs
+** test egg doesn't report failures on test-error (verify this)
