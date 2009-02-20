@@ -1,4 +1,0 @@
-create-temporary-directory
-delete-path*
-with-current-directory
-with-temporary-directory
