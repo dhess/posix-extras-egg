@@ -6,3 +6,6 @@ install:
 
 test:
 	chicken-setup -t
+
+clean:
+	rm -f *.exports *.so
