@@ -2,7 +2,7 @@
 ;;;
 ;;; Syntax for the posix-extras egg.
 ;;;
-;;; Copyright (c) 2009 Drew Hess.
+;;; Copyright (c) 2009 Drew Hess <dhess-src@bothan.net>.
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
