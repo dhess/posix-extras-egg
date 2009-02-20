@@ -1,4 +1,4 @@
-all:
+build:
 	chicken-setup -n
 
 install:
