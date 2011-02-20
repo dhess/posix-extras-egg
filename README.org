@@ -27,8 +27,7 @@
    posix-extras isn't currently available from the Eggs Unlimited
    repository, but you can easily add it to your local set of
    available eggs by running "make install" in the project
-   directory. You'll then be able to (require-extension posix-extras)
-   in your Scheme programs.
+   directory.
 
 ** Testing
    posix-extras includes a full set of unit tests. You can run them
