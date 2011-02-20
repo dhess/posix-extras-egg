@@ -1,0 +1,57 @@
+* The posix-extras Chicken Scheme egg.
+
+** What is it?
+   posix-extras is an egg for the Chicken Scheme system. It provides
+   some additional POSIX-y functionality not included with Chicken's
+   own posix unit.
+
+** Requirements
+*** Chicken Scheme
+    posix-extras requires Chicken Scheme version 4.6.0 or later. It may
+    work on earlier 4.x versions, but it hasn't been tested on those
+    versions.
+
+    An earlier version of the posix-extras egg (version 0.1) works with
+    Chicken Scheme 3.4.0 and later 3.x versions. This earlier version
+    is incompatible with Chicken 4.x, due to changes in Chicken 4.x's
+    module and macro systems. Version 0.1 of the posix-extras egg is no
+    longer maintained.
+
+*** OS
+    posix-extras has only been tested on Mac OS X 10.6, and on Debian
+    GNU/Linux, but it should work on any modern UNIX-like system. It
+    requires the mkdtemp C library function for secure temp directory
+    creation. posix-extras probably *won't* work on Windows.
+
+** Installing
+   posix-extras isn't currently available from the Eggs Unlimited
+   repository, but you can easily add it to your local set of
+   available eggs by running "make install" in the project
+   directory. You'll then be able to (require-extension posix-extras)
+   in your Scheme programs.
+
+** Testing
+   posix-extras includes a full set of unit tests. You can run them
+   with "make test". These tests will create and delete directories in
+   your filesystem. I recommend that you not run them as root, in case
+   there are bugs in posix-extras. In fact, the test harness performs
+   a check to discover whether the tests are being run as the root
+   user; if they are, the harness will print a message and skip the
+   tests entirely.
+
+** Using
+   Simply add 
+   #+BEGIN_SRC scheme
+   (require-extension posix-extras)
+   #+END_SRC
+   to your program.
+
+** Documentation
+   If there's demand, I'll create real documentation. For now, see the
+   source, and especially the test suite for example usage.
+
+** License
+   The source code for posix-extras is licensed under the MIT license.
+
+** Contact
+   Contact Drew Hess <dhess-src@bothan.net> for questions or problems.
