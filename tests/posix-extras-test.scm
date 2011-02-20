@@ -2,7 +2,7 @@
 ;;;
 ;;; Tests for the posix-extras egg.
 ;;;
-;;; Copyright (c) 2009 Drew Hess <dhess-src@bothan.net>.
+;;; Copyright (c) 2011 Drew Hess <dhess-src@bothan.net>.
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -25,7 +25,7 @@
 ;;; FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 ;;; OTHER DEALINGS IN THE SOFTWARE.
 
-(use files posix posix-extras runcmd srfi-12)
+(use files posix posix-extras shell srfi-12)
 (use test)
 
 ;; In certain tmpdir schemes (e.g., Mac OS X), current-directory may

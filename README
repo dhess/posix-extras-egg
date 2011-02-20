@@ -8,13 +8,13 @@ the mkdtemp C library function. It probably won't work on Windows.
 posix-extras isn't currently available from the Eggs Unlimited
 repository, but you can easily add it to your local set of available
 eggs by running "make install" in the project directory. You'll then
-be able to (use posix-extras) in your Scheme programs.
+be able to (require-extension posix-extras) in your Scheme programs.
 
 posix-extras includes a full set of unit tests. You can run them with
 "make test". These tests will create and delete directories in your
 filesystem. I recommend that you not run them as root, in case there
-are bugs in posix-extras. The test harness even performs a check to
-discover whether the tests are being run as the root user; if they
+are bugs in posix-extras. In fact, the test harness performs a check
+to discover whether the tests are being run as the root user; if they
 are, the harness will print a message and skip the tests entirely.
 
 The source code for posix-extras is licensed under the MIT license.

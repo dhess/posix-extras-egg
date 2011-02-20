@@ -1,11 +1,11 @@
 build:
-	chicken-setup -n
+	chicken-install -n
 
 install:
-	chicken-setup
+	chicken-install
 
 test:
-	chicken-setup -t
+	chicken-install -test
 
 clean:
-	rm -f *.exports *.so
+	rm -f *.import.scm *.so *.o

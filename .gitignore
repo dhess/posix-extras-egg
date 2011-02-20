@@ -1,2 +1,4 @@
 *.so
 *.exports
+*.o
+*.import.scm

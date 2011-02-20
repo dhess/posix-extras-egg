@@ -1,8 +1,6 @@
 ;;;; posix-extras.scm
 ;;;
-;;; Syntax for the posix-extras egg.
-;;;
-;;; Copyright (c) 2009 Drew Hess <dhess-src@bothan.net>.
+;;; Copyright (c) 2011 Drew Hess <dhess-src@bothan.net>.
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -25,8 +23,74 @@
 ;;; FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 ;;; OTHER DEALINGS IN THE SOFTWARE.
 
-(define-macro (with-current-directory* dirname . body)
-  `(with-current-directory ,dirname (lambda () ,@body)))
+(module posix-extras
+  (create-temporary-directory
+   delete-path*
+   with-current-directory
+   with-temporary-directory
+   with-current-directory*
+   with-temporary-directory*)
+  
+  (import scheme chicken foreign files posix)
 
-(define-macro (with-temporary-directory* . body)
-  `(with-temporary-directory (lambda () ,@body)))
+  (declare
+   (fixnum-arithmetic))
+
+  (define mkdtemp
+    (foreign-lambda c-string mkdtemp c-string))
+
+;;; Probably doesn't work on Windows. Sorry.
+
+  (define (create-temporary-directory #!optional parentdir)
+    ;; mkdtemp() on GNU/Linux requires at least 6 X's at the end of the
+    ;; template string. On Mac OS X it's less strict but uses the same
+    ;; pattern.
+    (let ((pd
+           (if parentdir
+               parentdir
+               (let ((env-tmpdir (getenv "TMPDIR")))
+                 (if env-tmpdir
+                     env-tmpdir
+                     "/tmp")))))
+      (let ((result (mkdtemp (normalize-pathname
+                              (string-append pd "/peXXXXXX")))))
+        (if (not result)
+            (##sys#posix-error)
+            result))))
+
+  (define (delete-path* pathname)
+    (if (directory? pathname)
+        (let ((full-paths (map (lambda (basename) (pathname-replace-directory
+                                              basename
+                                              pathname))
+                               (directory pathname #t))))
+          (map delete-path* full-paths)
+          (delete-directory pathname))
+        (delete-file pathname)))
+
+  (define (with-current-directory dirname thunk)
+    (let ((cwd (current-directory)))
+      (dynamic-wind
+        (lambda () (change-directory dirname))
+        thunk
+        (lambda () (change-directory cwd)))))
+
+  (define (with-temporary-directory thunk)
+    (let ((cwd (current-directory))
+          (tmpdir (create-temporary-directory)))
+      (dynamic-wind
+        (lambda () (change-directory tmpdir))
+        thunk
+        (lambda ()
+          (begin
+            (change-directory cwd)
+            (delete-path* tmpdir))))))
+
+  (define-syntax with-current-directory*
+    (syntax-rules ()
+      ((_ dirname e1 ...) (with-current-directory dirname (lambda () e1 ...)))))
+
+  (define-syntax with-temporary-directory*
+    (syntax-rules ()
+      ((_ e1 ...) (with-temporary-directory (lambda () e1 ...)))))
+  )

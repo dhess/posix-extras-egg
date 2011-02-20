@@ -1,12 +1,11 @@
 ;;; posix-extras.setup -*- scheme -*-
 
-(run (csc -s -check-imports -O2 -d1 -emit-exports posix-extras.exports
-          posix-extras-base.scm))
+(compile -s -O3 -d1 "posix-extras.scm" -j posix-extras)
+(compile -c -O3 -d1 "posix-extras.scm" -unit posix-extras)
+(compile -s -O3 -d0 "posix-extras.import.scm")
 
 (install-extension
  'posix-extras
- '("posix-extras.scm" "posix-extras-base.so")
- '((syntax)
-   (require-at-runtime posix-extras-base)
-   (version 0.1)
-   (exports "posix-extras.exports")))
+ '("posix-extras.o" "posix-extras.so" "posix-extras.import.so")
+ '((version 0.2)
+   (static "posix-extras.o")))
